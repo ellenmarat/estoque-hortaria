@@ -1,20 +1,16 @@
 <!doctype html>
 <html lang="pt-BR" class="h-full">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
  <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Estoque</title>
-  <script src="/_sdk/element_sdk.js"></script>
-  <script src="/_sdk/data_sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { box-sizing: border-box; font-family: Arial, sans-serif; }
+     body { box-sizing: border-box; font-family: Arial, sans-serif; }
     .alert-row { background-color: #fee; }
   </style>
-  <style>@view-transition { navigation: auto; }</style>
- <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
- </head>
+</head>
  <body class="h-full overflow-auto">
   <div class="h-full w-full bg-gradient-to-br from-green-50 to-blue-50 p-6"><!-- Modal de Login -->
    <div id="modalLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -90,7 +86,6 @@
     const supabaseUrl = 'https://SEU-PROJETO.supabase.co';
     const supabaseKey = 'SUA_CHAVE_PUBLICA_ANON';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-    console.log('Supabase ativo:', supabase);
     const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precisa fazer Pedido" };
     let registros = [];
     let localAtual = '';
@@ -1646,7 +1641,5 @@
     init();
   </script>
  <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9af7466920a25e0f',t:'MTc2NTk4MzQ2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>
-  const supabaseUrl = 'https://SEU-PROJETO.supabase.co';
-  const supabaseKey = 'SUA_CHAVE_PUBLICA_ANON';
 </script></body>
 </html>
