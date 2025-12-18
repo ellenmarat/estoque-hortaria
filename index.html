@@ -1,81 +1,1646 @@
 <!doctype html>
 <html lang="pt-BR" class="h-full">
-<head>
+ <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Estoque</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { box-sizing: border-box; font-family: Arial, sans-serif; }
+     body { box-sizing: border-box; font-family: Arial, sans-serif; }
+    .alert-row { background-color: #fee; }
   </style>
 </head>
-<body class="h-full overflow-auto">
-<div class="h-full w-full bg-gradient-to-br from-green-50 to-blue-50 p-6">
-
-  <!-- Login -->
-  <div id="modalLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+ <body class="h-full overflow-auto">
+  <div class="h-full w-full bg-gradient-to-br from-green-50 to-blue-50 p-6"><!-- Modal de Login -->
+   <div id="modalLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full">
-      <div class="text-center mb-6">
-        <h1 class="text-4xl font-bold mb-1" style="font-family:'Brush Script MT',cursive;">
-          <span style="color:#d32f2f;">hortar</span><span style="color:#388e3c;">i</span><span style="color:#d32f2f;">a</span>
-        </h1>
-        <h2 class="text-xl font-semibold text-green-700 mb-4">Controle de Estoque</h2>
-        <p class="text-sm text-gray-600">Digite a senha para acessar o sistema</p>
+     <div class="text-center mb-6">
+      <h1 class="text-4xl font-bold mb-1" style="font-family: 'Brush Script MT', cursive;"><span style="color: #d32f2f;">hortar</span><span style="color: #388e3c;">i</span><span style="color: #d32f2f;">a</span></h1>
+      <h2 class="text-xl font-semibold text-green-700 mb-4">Controle de Estoque</h2>
+      <p class="text-sm text-gray-600">Digite a senha para acessar o sistema</p>
+     </div>
+     <div class="space-y-4">
+      <div><label class="block text-sm font-semibold mb-2">Senha:</label> <input type="password" id="senhaInput" placeholder="Digite a senha" class="w-full p-3 border-2 border-green-300 rounded-lg text-lg">
       </div>
-
-      <label class="block text-sm font-semibold mb-2">Senha:</label>
-      <input type="password" id="senhaInput" placeholder="Digite a senha"
-             class="w-full p-3 border-2 border-green-300 rounded-lg text-lg mb-3">
-
-      <div id="erroSenha" class="hidden text-red-600 text-sm font-semibold text-center mb-3"></div>
-
-      <!-- IMPORTANT: type=button -->
-      <button id="btnEntrar" type="button"
-              class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold text-lg">
-        Entrar
-      </button>
+      <div id="erroSenha" class="hidden text-red-600 text-sm font-semibold text-center"></div><button id="btnEntrar" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold text-lg"> Entrar </button>
+     </div>
     </div>
-  </div>
-
-  <!-- Conteúdo -->
-  <div id="mainContent" class="hidden max-w-7xl mx-auto bg-white rounded-lg shadow-xl p-6">
+   </div>
+   <div id="mainContent" class="hidden max-w-7xl mx-auto bg-white rounded-lg shadow-xl p-6">
     <div class="text-center mb-6">
-      <h1 class="text-5xl font-bold mb-1" style="font-family:'Brush Script MT',cursive;">
-        <span style="color:#d32f2f;">hortar</span><span style="color:#388e3c;">i</span><span style="color:#d32f2f;">a</span>
-      </h1>
-      <h2 class="text-2xl font-semibold text-green-700">Controle de Estoque</h2>
+     <h1 class="text-5xl font-bold mb-1" style="font-family: 'Brush Script MT', cursive;"><span style="color: #d32f2f;">hortar</span><span style="color: #388e3c;">i</span><span style="color: #d32f2f;">a</span></h1>
+     <h2 id="titulo" class="text-2xl font-semibold text-green-700">Controle de Estoque</h2>
+     <div class="mt-2 flex items-center justify-center gap-4"><span id="modoAcesso" class="text-sm font-semibold"></span> <button id="btnSair" class="text-sm bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded">Sair</button>
+     </div>
     </div>
-    <p class="text-center text-gray-500">Sistema carregado com sucesso.</p>
+    <div class="mb-6 bg-green-50 p-4 rounded-lg"><label class="block text-lg font-semibold mb-2">Local de Estoque:</label> <select id="localSelect" class="w-full p-3 border-2 border-green-300 rounded-lg text-lg"> <option value="">-- Selecione --</option> <option value="almox_agroindustria">Almoxarifado Agroindústria</option> <option value="almox_hortaria">Almoxarifado Horta</option> <option value="almox_mnt">Almoxarifado Manutenção</option> <option value="cam_fria_mp">Câmara Fria Matéria-prima</option> <option value="cam_fria_prod_finais">Câmara Fria Produtos Acabados</option> </select>
+    </div>
+    <div class="mb-6 flex gap-3 flex-wrap"><button id="btnAdd" disabled class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"> ➕ Adicionar Produto </button> <button id="btnConfig" disabled class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"> 📋 Ficha dos Produtos </button> <button id="btnRelatorios" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold"> 📊 Relatórios </button>
+    </div>
+    <div id="tabelaDiv" class="overflow-x-auto">
+     <p class="text-center py-12 text-gray-500">Selecione um local para começar</p>
+    </div><!-- Modal Ficha dos Produtos -->
+    <div id="modalConfig" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+     <div class="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+      <h2 class="text-2xl font-bold mb-4">📋 Ficha dos Produtos</h2>
+      <p class="mb-4">Local: <span id="localNome" class="font-semibold"></span></p>
+      <div class="mb-4">
+       <div class="flex gap-2"><input type="text" id="novoProdNome" placeholder="Nome do produto" class="flex-1 p-2 border-2 rounded-lg"> <button id="btnAddProd" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">Adicionar</button>
+       </div>
+      </div>
+      <div id="listaProd" class="space-y-3 mb-4 max-h-96 overflow-y-auto"></div><button id="btnFecharConfig" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">Fechar</button>
+     </div>
+    </div><!-- Modal Adicionar Produto -->
+    <div id="modalAdd" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+     <div class="bg-white rounded-lg p-6 max-w-md w-full">
+      <h2 class="text-2xl font-bold mb-4">Adicionar Produto</h2>
+      <div class="space-y-4">
+       <div><label class="block text-sm font-semibold mb-1">Produto:</label> <select id="prodSelect" class="w-full p-2 border-2 rounded-lg"> <option value="">-- Selecione --</option> </select>
+       </div>
+       <div><label class="block text-sm font-semibold mb-1">Tipo:</label> <select id="tipoSelect" class="w-full p-2 border-2 rounded-lg"> <option value="Und">Und</option> <option value="Rolo">Rolo</option> <option value="Cx">Cx</option> <option value="Litro">Litro</option> <option value="ml">ml</option> <option value="mg">mg</option> <option value="Kg">Kg</option> </select>
+       </div>
+       <div><label class="block text-sm font-semibold mb-1">Estoque Mínimo:</label> <input type="text" id="estMin" placeholder="0" class="w-full p-2 border-2 rounded-lg">
+       </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-6"><button id="btnCancelar" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">Cancelar</button> <button id="btnConfirmar" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg">Adicionar</button>
+      </div>
+     </div>
+    </div><!-- Modal Relatórios -->
+    <div id="modalRelatorios" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+     <div class="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+      <h2 class="text-2xl font-bold mb-4">📊 Relatórios de Estoque</h2>
+      <div class="mb-6 flex gap-3 border-b pb-4 flex-wrap"><button id="tabGeral" class="px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold">Relatório Geral por Almox</button> <button id="tabPedidos" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300">Produtos a Pedir</button> <button id="tabMovimentacoes" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300">Movimentações Mensais</button> <button id="tabAnalise" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300">Análise de Produtos</button>
+      </div>
+      <div id="relatorioGeral" class="mb-4"></div>
+      <div id="relatorioPedidos" class="mb-4 hidden"></div>
+      <div id="relatorioMovimentacoes" class="mb-4 hidden"></div>
+      <div id="relatorioAnalise" class="mb-4 hidden"></div>
+      <div class="flex justify-end gap-3 mt-6"><button id="btnImprimirRel" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg">🖨️ Imprimir</button> <button id="btnFecharRel" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg">Fechar</button>
+      </div>
+     </div>
+    </div>
+   </div>
   </div>
+  <script>
+    const supabaseUrl = 'https://SEU-PROJETO.supabase.co';
+    const supabaseKey = 'SUA_CHAVE_PUBLICA_ANON';
+    const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precisa fazer Pedido" };
+    let registros = [];
+    let localAtual = '';
+    let produtosLocal = {};
+    let modoEdicao = false;
+    
+    const SENHA_EDICAO = 'Fmo032099*';
+    const SENHA_VISUALIZACAO = 'visualizar2025';
 
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-
-  const SENHA_EDICAO = 'Fmo032099*';
-  const SENHA_VISUALIZACAO = 'visualizar2025';
-
-  const btnEntrar = document.getElementById('btnEntrar');
-  const senhaInput = document.getElementById('senhaInput');
-  const erroSenha = document.getElementById('erroSenha');
-  const modalLogin = document.getElementById('modalLogin');
-  const mainContent = document.getElementById('mainContent');
-
-  btnEntrar.addEventListener('click', () => {
-    const senha = senhaInput.value;
-
-    if (senha === SENHA_EDICAO || senha === SENHA_VISUALIZACAO) {
-      modalLogin.classList.add('hidden');
-      mainContent.classList.remove('hidden');
-    } else {
-      erroSenha.textContent = 'Senha inválida';
-      erroSenha.classList.remove('hidden');
+    function fmt(n) {
+      if (!n && n !== 0) return '';
+      return Number(String(n).replace(/\D/g, '')).toLocaleString('pt-BR');
     }
-  });
 
-});
-</script>
+    function fmtDinheiro(n) {
+      if (!n && n !== 0) return 'R$ 0,00';
+      const num = typeof n === 'string' ? parseFloat(n.replace(/\./g, '').replace(',', '.')) : n;
+      return 'R$ ' + num.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
 
-</body>
+    function parse(s) {
+      if (!s) return 0;
+      return Number(String(s).replace(/\./g, ''));
+    }
+
+    function parseDinheiro(s) {
+      if (!s) return 0;
+      return parseFloat(String(s).replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+    }
+
+    function getData() {
+      const h = new Date();
+      return `${String(h.getDate()).padStart(2,'0')}/${String(h.getMonth()+1).padStart(2,'0')}/${String(h.getFullYear()).slice(-2)}`;
+    }
+
+    function parseJson(s) {
+      try { return JSON.parse(s || '[]'); } catch { return []; }
+    }
+
+    function calcSaldo(ent, sai) {
+      const e = parseJson(ent).reduce((s,i) => s + parse(i.quantidade), 0);
+      const sa = parseJson(sai).reduce((s,i) => s + parse(i.quantidade), 0);
+      return e - sa;
+    }
+
+    function calcValorEstoque(ent, sai) {
+      const entradas = parseJson(ent).map(e => ({
+        quantidade: parse(e.quantidade),
+        preco: parseDinheiro(e.preco),
+        precoUnit: parseDinheiro(e.preco) / parse(e.quantidade)
+      }));
+      
+      const saidas = parseJson(sai);
+      let totalSaida = saidas.reduce((s, i) => s + parse(i.quantidade), 0);
+      
+      let valorEstoque = 0;
+      let qtdRestante = 0;
+      
+      for (let entrada of entradas) {
+        if (totalSaida >= entrada.quantidade) {
+          totalSaida -= entrada.quantidade;
+        } else if (totalSaida > 0) {
+          const qtdSobra = entrada.quantidade - totalSaida;
+          valorEstoque += qtdSobra * entrada.precoUnit;
+          qtdRestante += qtdSobra;
+          totalSaida = 0;
+        } else {
+          valorEstoque += entrada.preco;
+          qtdRestante += entrada.quantidade;
+        }
+      }
+      
+      return { valor: valorEstoque, quantidade: qtdRestante };
+    }
+
+    const dataHandler = {
+      onDataChanged(data) {
+        registros = data;
+        localStorage.setItem('estoque_registros', JSON.stringify(data));
+        if (localAtual) renderTabela();
+        if (document.getElementById('modalConfig').classList.contains('hidden') === false) {
+          renderListaProd();
+        }
+      }
+    };
+    
+    function salvarLocal() {
+      localStorage.setItem('estoque_registros', JSON.stringify(registros));
+    }
+
+    function verificarSenha() {
+      const senha = document.getElementById('senhaInput').value;
+      const erroDiv = document.getElementById('erroSenha');
+      
+      if (senha === SENHA_EDICAO) {
+        modoEdicao = true;
+        document.getElementById('modoAcesso').innerHTML = '<span class="bg-green-100 text-green-800 px-3 py-1 rounded">✏️ Modo Edição</span>';
+        document.getElementById('modalLogin').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+      } else if (senha === SENHA_VISUALIZACAO) {
+        modoEdicao = false;
+        document.getElementById('modoAcesso').innerHTML = '<span class="bg-blue-100 text-blue-800 px-3 py-1 rounded">👁️ Modo Visualização</span>';
+        document.getElementById('modalLogin').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
+      } else {
+        erroDiv.textContent = '❌ Senha incorreta! Tente novamente.';
+        erroDiv.classList.remove('hidden');
+        document.getElementById('senhaInput').value = '';
+        setTimeout(() => erroDiv.classList.add('hidden'), 3000);
+      }
+    }
+    
+    document.getElementById('btnEntrar').onclick = verificarSenha;
+    document.getElementById('senhaInput').onkeypress = (e) => {
+      if (e.key === 'Enter') verificarSenha();
+    };
+    
+    document.getElementById('btnSair').onclick = () => {
+      document.getElementById('modalLogin').classList.remove('hidden');
+      document.getElementById('mainContent').classList.add('hidden');
+      document.getElementById('senhaInput').value = '';
+      modoEdicao = false;
+    };
+
+    function renderTabela() {
+      const div = document.getElementById('tabelaDiv');
+      const filtrados = registros.filter(r => r.local === localAtual).sort((a,b) => a.ordem - b.ordem);
+      
+      if (filtrados.length === 0) {
+        div.innerHTML = '<p class="text-center py-12 text-gray-500">Nenhum produto. Clique em "Adicionar Produto".</p>';
+        return;
+      }
+      
+      const cfg = window.elementSdk?.config || defaultConfig;
+      let html = '<table class="w-full border-collapse bg-white shadow-lg"><thead><tr class="bg-green-600 text-white">';
+      html += '<th class="border p-2 text-sm">Ordem</th><th class="border p-2 text-sm">Produto</th><th class="border p-2 text-sm">Tipo</th>';
+      html += '<th class="border p-2 text-sm">Est. Mín</th><th class="border p-2 text-sm">Est. Ini</th><th class="border p-2 text-sm">Entradas<br><span class="text-xs">(Qtd/R$/Data)</span></th>';
+      html += '<th class="border p-2 text-sm">Saídas</th><th class="border p-2 text-sm">Saldo</th><th class="border p-2 text-sm">Valor<br>Estoque</th><th class="border p-2 text-sm">Situação</th>';
+      html += '<th class="border p-2 text-sm">Ações</th></tr></thead><tbody>';
+      
+      filtrados.forEach(r => {
+        const saldo = calcSaldo(r.entradas, r.saidas);
+        const valorInfo = calcValorEstoque(r.entradas, r.saidas);
+        const alerta = saldo <= parse(r.estoqueMinimo);
+        const ent = parseJson(r.entradas);
+        const sai = parseJson(r.saidas);
+        const ultEnt = ent.length > 0 ? ent[ent.length-1] : null;
+        const ultSai = sai.length > 0 ? sai[sai.length-1] : null;
+        
+        html += `<tr class="${alerta?'alert-row':''}">`;
+        html += `<td class="border p-2 text-center">${r.ordem}</td>`;
+        html += `<td class="border p-2">${r.produto}</td>`;
+        html += `<td class="border p-2 text-center">${r.tipo}</td>`;
+        html += `<td class="border p-2 text-right">${fmt(r.estoqueMinimo)}</td>`;
+        html += `<td class="border p-2 text-right font-semibold">${fmt(saldo)}</td>`;
+        html += `<td class="border p-2"><div class="mb-1 flex gap-2 text-xs font-semibold text-gray-600"><span class="w-14 text-center">Qtd</span><span class="w-16 text-center">R$</span><span class="w-20 text-center">Data</span></div><div class="flex gap-1 items-center flex-wrap">`;
+        html += `<input type="text" value="${ultEnt?fmt(ultEnt.quantidade):''}" placeholder="0" class="w-14 p-1 border rounded text-right text-xs" data-id="${r.__backendId}" data-t="ent-q" ${!modoEdicao?'disabled':''}>`;
+        html += `<input type="text" value="${ultEnt?ultEnt.preco:''}" placeholder="R$ 0,00" class="w-16 p-1 border rounded text-right text-xs" data-id="${r.__backendId}" data-t="ent-p" ${!modoEdicao?'disabled':''}>`;
+        html += `<input type="text" value="${ultEnt?ultEnt.data:getData()}" placeholder="dd/mm/aa" class="w-20 p-1 border rounded text-center text-xs" data-id="${r.__backendId}" data-t="ent-d" ${!modoEdicao?'disabled':''}>`;
+        html += `<button class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs disabled:bg-gray-300 disabled:cursor-not-allowed" data-id="${r.__backendId}" data-t="add-ent" ${!modoEdicao?'disabled':''}>+</button>`;
+        html += `</div>${ent.length>1?`<div class="text-xs text-gray-600 mt-1">${ent.length} registro(s)</div>`:''}</td>`;
+        html += `<td class="border p-2"><div class="flex gap-2 items-center">`;
+        html += `<input type="text" value="${ultSai?fmt(ultSai.quantidade):''}" placeholder="0" class="w-20 p-1 border rounded text-right text-sm" data-id="${r.__backendId}" data-t="sai-q" ${!modoEdicao?'disabled':''}>`;
+        html += `<input type="text" value="${ultSai?ultSai.data:getData()}" placeholder="dd/mm/aa" class="w-20 p-1 border rounded text-center text-sm" data-id="${r.__backendId}" data-t="sai-d" ${!modoEdicao?'disabled':''}>`;
+        html += `<button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs disabled:bg-gray-300 disabled:cursor-not-allowed" data-id="${r.__backendId}" data-t="add-sai" ${!modoEdicao?'disabled':''}>+</button>`;
+        html += `</div>${sai.length>1?`<div class="text-xs text-gray-600 mt-1">${sai.length} registro(s)</div>`:''}</td>`;
+        html += `<td class="border p-2 text-right font-bold text-lg">${fmt(saldo)}</td>`;
+        const valorMedio = saldo > 0 ? valorInfo.valor / saldo : 0;
+        html += `<td class="border p-2 text-right"><div class="font-bold text-blue-700">${fmtDinheiro(valorInfo.valor)}</div><div class="text-xs text-orange-600">(Méd: ${fmtDinheiro(valorMedio)}/un)</div></td>`;
+        html += `<td class="border p-2"><div class="${alerta?'text-red-600':'text-green-600'} font-semibold">${alerta?(cfg.alert_message||defaultConfig.alert_message):'Ok'}</div>`;
+        if (alerta) {
+          html += `<div class="mt-2"><label class="block text-xs font-semibold mb-1">Pedido feito?</label>`;
+          html += `<select class="w-full p-1 border rounded text-xs" data-id="${r.__backendId}" data-t="ped" ${!modoEdicao?'disabled':''}>`;
+          html += `<option value="Não" ${r.pedidoFeito==='Não'||!r.pedidoFeito?'selected':''}>Não</option>`;
+          html += `<option value="Sim" ${r.pedidoFeito==='Sim'?'selected':''}>Sim</option></select>`;
+          html += `<input type="text" value="${r.observacao||''}" placeholder="Observação" class="w-full p-1 border rounded text-xs mt-1" data-id="${r.__backendId}" data-t="obs" ${!modoEdicao?'disabled':''}></div>`;
+        }
+        html += `</td>`;
+        html += `<td class="border p-2 text-center"><button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs disabled:bg-gray-300 disabled:cursor-not-allowed" data-id="${r.__backendId}" data-t="del" ${!modoEdicao?'disabled':''}>Excluir</button></td>`;
+        html += `</tr>`;
+      });
+      
+      html += '</tbody></table>';
+      div.innerHTML = html;
+      
+      div.querySelectorAll('[data-t="add-ent"]').forEach(b => b.onclick = addEntrada);
+      div.querySelectorAll('[data-t="add-sai"]').forEach(b => b.onclick = addSaida);
+      div.querySelectorAll('[data-t="ped"]').forEach(s => s.onchange = updPed);
+      div.querySelectorAll('[data-t="obs"]').forEach(i => i.onblur = updObs);
+      div.querySelectorAll('[data-t="del"]').forEach(b => b.onclick = delProd);
+    }
+
+    async function addEntrada(e) {
+      if (!modoEdicao) return;
+      const btn = e.target;
+      const id = btn.dataset.id;
+      const reg = registros.find(r => r.__backendId === id);
+      if (!reg) return;
+      
+      const row = btn.closest('tr');
+      const q = row.querySelector('[data-t="ent-q"]').value.trim();
+      const p = row.querySelector('[data-t="ent-p"]').value.trim();
+      const d = row.querySelector('[data-t="ent-d"]').value.trim();
+      
+      if (!q || parse(q) === 0) { 
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-1';
+        msg.textContent = 'Insira quantidade válida';
+        row.querySelector('[data-t="ent-q"]').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      if (!p || parseDinheiro(p) === 0) { 
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-1';
+        msg.textContent = 'Insira preço válido';
+        row.querySelector('[data-t="ent-p"]').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      if (!d) { 
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-1';
+        msg.textContent = 'Insira data válida';
+        row.querySelector('[data-t="ent-d"]').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      
+      btn.disabled = true;
+      btn.textContent = '...';
+      
+      const arr = parseJson(reg.entradas);
+      arr.push({ quantidade: q, preco: p, data: d });
+      
+      if (window.dataSdk) {
+        const res = await window.dataSdk.update({ ...reg, entradas: JSON.stringify(arr) });
+        if (res.isOk) {
+          row.querySelector('[data-t="ent-q"]').value = '';
+          row.querySelector('[data-t="ent-p"]').value = '';
+          row.querySelector('[data-t="ent-d"]').value = getData();
+        } else {
+          const msg = document.createElement('div');
+          msg.className = 'text-red-600 text-xs mt-1';
+          msg.textContent = 'Erro ao adicionar entrada';
+          btn.parentElement.appendChild(msg);
+          setTimeout(() => msg.remove(), 3000);
+          btn.disabled = false;
+          btn.textContent = '+';
+        }
+      } else {
+        reg.entradas = JSON.stringify(arr);
+        salvarLocal();
+        renderTabela();
+      }
+    }
+
+    async function addSaida(e) {
+      if (!modoEdicao) return;
+      const btn = e.target;
+      const id = btn.dataset.id;
+      const reg = registros.find(r => r.__backendId === id);
+      if (!reg) return;
+      
+      const row = btn.closest('tr');
+      const q = row.querySelector('[data-t="sai-q"]').value.trim();
+      const d = row.querySelector('[data-t="sai-d"]').value.trim();
+      
+      if (!q || parse(q) === 0) { 
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-1';
+        msg.textContent = 'Insira quantidade válida';
+        row.querySelector('[data-t="sai-q"]').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      if (!d) { 
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-1';
+        msg.textContent = 'Insira data válida';
+        row.querySelector('[data-t="sai-d"]').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      
+      const saldoAtual = calcSaldo(reg.entradas, reg.saidas);
+      if (parse(q) > saldoAtual) {
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-1 font-semibold';
+        msg.textContent = `Saída maior que saldo! Disponível: ${fmt(saldoAtual)}`;
+        row.querySelector('[data-t="sai-q"]').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 4000);
+        return;
+      }
+      
+      btn.disabled = true;
+      btn.textContent = '...';
+      
+      const custoSaida = calcCustoSaidaPEPS(reg.entradas, reg.saidas, parse(q));
+      
+      const arr = parseJson(reg.saidas);
+      arr.push({ quantidade: q, data: d, custoTotal: custoSaida.toFixed(2) });
+      
+      if (window.dataSdk) {
+        const res = await window.dataSdk.update({ ...reg, saidas: JSON.stringify(arr) });
+        if (res.isOk) {
+          row.querySelector('[data-t="sai-q"]').value = '';
+          row.querySelector('[data-t="sai-d"]').value = getData();
+        } else {
+          const msg = document.createElement('div');
+          msg.className = 'text-red-600 text-xs mt-1';
+          msg.textContent = 'Erro ao adicionar saída';
+          btn.parentElement.appendChild(msg);
+          setTimeout(() => msg.remove(), 3000);
+          btn.disabled = false;
+          btn.textContent = '+';
+        }
+      } else {
+        reg.saidas = JSON.stringify(arr);
+        salvarLocal();
+        renderTabela();
+      }
+    }
+
+    function calcCustoSaidaPEPS(entStr, saiStr, qtdNovaSaida) {
+      const entradas = parseJson(entStr).map(e => ({
+        quantidade: parse(e.quantidade),
+        preco: parseDinheiro(e.preco),
+        precoUnit: parseDinheiro(e.preco) / parse(e.quantidade)
+      }));
+      
+      const saidas = parseJson(saiStr);
+      let totalSaidaAnterior = saidas.reduce((s, i) => s + parse(i.quantidade), 0);
+      
+      let custoTotal = 0;
+      let qtdRestante = qtdNovaSaida;
+      
+      for (let entrada of entradas) {
+        if (totalSaidaAnterior >= entrada.quantidade) {
+          totalSaidaAnterior -= entrada.quantidade;
+        } else if (totalSaidaAnterior > 0) {
+          const qtdDisponivelNaEntrada = entrada.quantidade - totalSaidaAnterior;
+          totalSaidaAnterior = 0;
+          
+          if (qtdRestante <= qtdDisponivelNaEntrada) {
+            custoTotal += qtdRestante * entrada.precoUnit;
+            qtdRestante = 0;
+            break;
+          } else {
+            custoTotal += qtdDisponivelNaEntrada * entrada.precoUnit;
+            qtdRestante -= qtdDisponivelNaEntrada;
+          }
+        } else {
+          if (qtdRestante <= entrada.quantidade) {
+            custoTotal += qtdRestante * entrada.precoUnit;
+            qtdRestante = 0;
+            break;
+          } else {
+            custoTotal += entrada.preco;
+            qtdRestante -= entrada.quantidade;
+          }
+        }
+      }
+      
+      return custoTotal;
+    }
+
+    async function updPed(e) {
+      if (!modoEdicao) return;
+      const sel = e.target;
+      const id = sel.dataset.id;
+      const reg = registros.find(r => r.__backendId === id);
+      if (!reg) return;
+      
+      sel.disabled = true;
+      if (window.dataSdk) {
+        const res = await window.dataSdk.update({ ...reg, pedidoFeito: sel.value });
+        if (!res.isOk) {
+          const msg = document.createElement('div');
+          msg.className = 'text-red-600 text-xs mt-1';
+          msg.textContent = 'Erro ao atualizar';
+          sel.parentElement.appendChild(msg);
+          setTimeout(() => msg.remove(), 3000);
+        }
+      } else {
+        reg.pedidoFeito = sel.value;
+        salvarLocal();
+      }
+      sel.disabled = false;
+    }
+
+    async function updObs(e) {
+      if (!modoEdicao) return;
+      const inp = e.target;
+      const id = inp.dataset.id;
+      const reg = registros.find(r => r.__backendId === id);
+      if (!reg) return;
+      
+      inp.disabled = true;
+      if (window.dataSdk) {
+        const res = await window.dataSdk.update({ ...reg, observacao: inp.value });
+        if (!res.isOk) {
+          const msg = document.createElement('div');
+          msg.className = 'text-red-600 text-xs mt-1';
+          msg.textContent = 'Erro ao atualizar';
+          inp.parentElement.appendChild(msg);
+          setTimeout(() => msg.remove(), 3000);
+        }
+      } else {
+        reg.observacao = inp.value;
+        salvarLocal();
+      }
+      inp.disabled = false;
+    }
+
+    async function delProd(e) {
+      if (!modoEdicao) return;
+      const btn = e.target;
+      const id = btn.dataset.id;
+      const reg = registros.find(r => r.__backendId === id);
+      if (!reg) return;
+      
+      const cell = btn.closest('td');
+      const conf = document.createElement('div');
+      conf.className = 'mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded';
+      conf.innerHTML = '<p class="text-xs mb-2">Confirmar exclusão?</p><button class="bg-red-600 text-white px-2 py-1 rounded text-xs mr-2" data-c="s">Sim</button><button class="bg-gray-500 text-white px-2 py-1 rounded text-xs" data-c="n">Não</button>';
+      cell.appendChild(conf);
+      btn.disabled = true;
+      
+      conf.querySelector('[data-c="s"]').onclick = async () => {
+        conf.querySelector('[data-c="s"]').disabled = true;
+        conf.querySelector('[data-c="s"]').textContent = '...';
+        if (window.dataSdk) {
+          const res = await window.dataSdk.delete(reg);
+          if (!res.isOk) { 
+            const msg = document.createElement('div');
+            msg.className = 'text-red-600 text-xs mt-1';
+            msg.textContent = 'Erro ao excluir';
+            conf.appendChild(msg);
+            setTimeout(() => { conf.remove(); btn.disabled = false; }, 3000);
+          }
+        } else {
+          const idx = registros.findIndex(r => r.__backendId === id);
+          if (idx > -1) {
+            registros.splice(idx, 1);
+            salvarLocal();
+            renderTabela();
+          }
+        }
+      };
+      
+      conf.querySelector('[data-c="n"]').onclick = () => { conf.remove(); btn.disabled = false; };
+    }
+
+    document.getElementById('btnConfig').onclick = () => {
+      if (!modoEdicao) return;
+      if (!localAtual) { 
+        const msg = document.createElement('div');
+        msg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        msg.textContent = 'Selecione um local primeiro';
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      const nomes = { almox_agroindustria:'Almoxarifado Agroindústria', almox_hortaria:'Almoxarifado Hortaria', almox_mnt:'Almoxarifado Manutenção', cam_fria_mp:'Câmara Fria Matéria-prima', cam_fria_prod_finais:'Câmara Fria Produtos Acabados' };
+      document.getElementById('localNome').textContent = nomes[localAtual];
+      renderListaProd();
+      document.getElementById('modalConfig').classList.remove('hidden');
+    };
+
+    document.getElementById('btnFecharConfig').onclick = () => {
+      document.getElementById('modalConfig').classList.add('hidden');
+      document.getElementById('novoProdNome').value = '';
+    };
+
+    document.getElementById('btnAddProd').onclick = () => {
+      const nome = document.getElementById('novoProdNome').value.trim();
+      if (!nome) { 
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-sm mt-2';
+        msg.textContent = 'Insira nome do produto';
+        document.getElementById('novoProdNome').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      if (produtosLocal[localAtual].includes(nome)) { 
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-sm mt-2';
+        msg.textContent = 'Produto já existe';
+        document.getElementById('novoProdNome').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      produtosLocal[localAtual].push(nome);
+      localStorage.setItem('produtosLocal', JSON.stringify(produtosLocal));
+      renderListaProd();
+      document.getElementById('novoProdNome').value = '';
+      updProdSelect();
+    };
+
+    function renderListaProd() {
+      const div = document.getElementById('listaProd');
+      const prods = produtosLocal[localAtual] || [];
+      if (prods.length === 0) { 
+        div.innerHTML = '<p class="text-gray-500 text-sm">Nenhum produto</p>'; 
+        return; 
+      }
+      
+      div.innerHTML = prods.map((p,i) => {
+        const reg = registros.find(r => r.local === localAtual && r.produto === p);
+        const analises = reg ? parseJson(reg.analisesFornecedores || '[]') : [];
+        
+        return `
+          <div class="border-2 border-gray-200 rounded-lg p-3 bg-gray-50">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-sm font-semibold">${p}</span>
+              <div class="flex gap-2 flex-wrap">
+                ${reg ? `<button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs" data-prod="${p}" data-t="editar">✏️ Editar Ficha</button>` : ''}
+                <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs" data-prod="${p}" data-t="analise">📊 Análise</button>
+                <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs" data-i="${i}" data-t="rem">Remover</button>
+              </div>
+            </div>
+            ${reg ? `
+              <div class="text-xs text-gray-600 mb-2 grid grid-cols-3 gap-2">
+                <div><strong>Tipo:</strong> ${reg.tipo}</div>
+                <div><strong>Est. Mínimo:</strong> ${fmt(reg.estoqueMinimo)}</div>
+                <div><strong>Saldo Atual:</strong> ${fmt(calcSaldo(reg.entradas, reg.saidas))}</div>
+              </div>
+            ` : '<p class="text-xs text-yellow-600 mb-2">⚠️ Produto não adicionado ao estoque ainda</p>'}
+            <div id="editarDiv_${p.replace(/\s/g, '_')}" class="hidden mt-3 bg-yellow-50 p-3 rounded border-2 border-yellow-400">
+              <h4 class="font-bold text-sm mb-2 text-yellow-800">✏️ Editar Informações do Produto</h4>
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Nome do Produto:</label>
+                  <input type="text" value="${p}" class="w-full p-1 border rounded text-xs" data-prod="${p}" data-f="edit-nome">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Tipo:</label>
+                  <select class="w-full p-1 border rounded text-xs" data-prod="${p}" data-f="edit-tipo">
+                    <option value="Und" ${reg?.tipo==='Und'?'selected':''}>Und</option>
+                    <option value="Rolo" ${reg?.tipo==='Rolo'?'selected':''}>Rolo</option>
+                    <option value="Cx" ${reg?.tipo==='Cx'?'selected':''}>Cx</option>
+                    <option value="Litro" ${reg?.tipo==='Litro'?'selected':''}>Litro</option>
+                    <option value="ml" ${reg?.tipo==='ml'?'selected':''}>ml</option>
+                    <option value="mg" ${reg?.tipo==='mg'?'selected':''}>mg</option>
+                    <option value="Kg" ${reg?.tipo==='Kg'?'selected':''}>Kg</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Estoque Mínimo:</label>
+                  <input type="text" value="${reg ? fmt(reg.estoqueMinimo) : ''}" placeholder="0" class="w-full p-1 border rounded text-xs" data-prod="${p}" data-f="edit-estmin">
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs flex-1" data-prod="${p}" data-t="salvar-edit">💾 Salvar Alterações</button>
+                <button class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-xs" data-prod="${p}" data-t="cancelar-edit">Cancelar</button>
+              </div>
+            </div>
+            <div id="analiseDiv_${p.replace(/\s/g, '_')}" class="hidden mt-3 bg-white p-3 rounded border">
+              <h4 class="font-bold text-sm mb-2 text-blue-700">Análise de Rendimento e Qualidade</h4>
+              ${analises.length > 0 ? `
+                <div class="mb-3 space-y-2 max-h-48 overflow-y-auto">
+                  ${analises.map((a, idx) => `
+                    <div class="text-xs bg-blue-50 p-2 rounded border" id="analise_${p.replace(/\s/g, '_')}_${idx}">
+                      <div class="flex justify-between items-start mb-2">
+                        <span class="font-bold text-blue-700">Análise #${idx + 1}</span>
+                        <div class="flex gap-1">
+                          <button class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs" data-prod="${p}" data-idx="${idx}" data-t="edit-analise" title="Editar">✏️</button>
+                          <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs" data-prod="${p}" data-idx="${idx}" data-t="del-analise" title="Excluir">🗑️</button>
+                        </div>
+                      </div>
+                      <div class="grid grid-cols-2 gap-2">
+                        <div><strong>Fornecedor:</strong> ${a.fornecedor || '-'}</div>
+                        <div><strong>Qualidade:</strong> ${a.qualidade || '-'}</div>
+                        <div><strong>Entrada:</strong> ${a.entrada || '-'} ${a.tipo || '-'}</div>
+                        <div><strong>Produto Acabado:</strong> ${a.saida || '-'}</div>
+                        <div><strong>Rendimento:</strong> <span class="text-green-600 font-bold">${a.rendimento || '0'}%</span></div>
+                        <div><strong>Quebra:</strong> <span class="text-red-600 font-bold">${a.quebra || '0'}%</span></div>
+                      </div>
+                      ${a.observacao ? `<div class="mt-2"><strong>Obs:</strong> ${a.observacao}</div>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              ` : '<p class="text-xs text-gray-500 mb-3">Nenhuma análise cadastrada</p>'}
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Fornecedor:</label>
+                  <input type="text" placeholder="Nome do fornecedor" class="w-full p-1 border rounded text-xs" data-prod="${p}" data-f="forn">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Qualidade:</label>
+                  <input type="text" placeholder="Qualidade recebida" class="w-full p-1 border rounded text-xs" data-prod="${p}" data-f="qual">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Amostragem Entrada:</label>
+                  <input type="text" placeholder="0" class="w-full p-1 border rounded text-xs" data-prod="${p}" data-f="entr">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Tipo:</label>
+                  <select class="w-full p-1 border rounded text-xs" data-prod="${p}" data-f="tipo">
+                    <option value="Und">Und</option>
+                    <option value="Rolo">Rolo</option>
+                    <option value="Cx">Cx</option>
+                    <option value="Litro">Litro</option>
+                    <option value="ml">ml</option>
+                    <option value="mg">mg</option>
+                    <option value="Kg">Kg</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold mb-1">Produto Acabado:</label>
+                  <input type="text" placeholder="0" class="w-full p-1 border rounded text-xs" data-prod="${p}" data-f="said">
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="block text-xs font-semibold mb-1">Observação:</label>
+                <input type="text" placeholder="Ex: 10 pacotes de 500g" class="w-full p-1 border rounded text-xs" data-prod="${p}" data-f="obs">
+              </div>
+              <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs w-full" data-prod="${p}" data-t="add-analise">+ Adicionar Análise</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      div.querySelectorAll('[data-t="rem"]').forEach(b => {
+        b.onclick = () => {
+          produtosLocal[localAtual].splice(parseInt(b.dataset.i), 1);
+          localStorage.setItem('produtosLocal', JSON.stringify(produtosLocal));
+          renderListaProd();
+          updProdSelect();
+        };
+      });
+      
+      div.querySelectorAll('[data-t="editar"]').forEach(b => {
+        b.onclick = () => {
+          const prod = b.dataset.prod;
+          const divEditar = document.getElementById(`editarDiv_${prod.replace(/\s/g, '_')}`);
+          divEditar.classList.toggle('hidden');
+        };
+      });
+      
+      div.querySelectorAll('[data-t="salvar-edit"]').forEach(b => {
+        b.onclick = () => salvarEdicaoProduto(b.dataset.prod);
+      });
+      
+      div.querySelectorAll('[data-t="cancelar-edit"]').forEach(b => {
+        b.onclick = () => {
+          const prod = b.dataset.prod;
+          const divEditar = document.getElementById(`editarDiv_${prod.replace(/\s/g, '_')}`);
+          divEditar.classList.add('hidden');
+        };
+      });
+      
+      div.querySelectorAll('[data-t="analise"]').forEach(b => {
+        b.onclick = () => {
+          const prod = b.dataset.prod;
+          const divAnalise = document.getElementById(`analiseDiv_${prod.replace(/\s/g, '_')}`);
+          divAnalise.classList.toggle('hidden');
+        };
+      });
+      
+      div.querySelectorAll('[data-t="add-analise"]').forEach(b => {
+        b.onclick = () => addAnalise(b.dataset.prod);
+      });
+      
+      div.querySelectorAll('[data-t="edit-analise"]').forEach(b => {
+        b.onclick = () => editAnalise(b.dataset.prod, parseInt(b.dataset.idx));
+      });
+      
+      div.querySelectorAll('[data-t="del-analise"]').forEach(b => {
+        b.onclick = () => delAnalise(b.dataset.prod, parseInt(b.dataset.idx));
+      });
+    }
+
+    async function salvarEdicaoProduto(nomeProdAntigo) {
+      const reg = registros.find(r => r.local === localAtual && r.produto === nomeProdAntigo);
+      if (!reg) {
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-2';
+        msg.textContent = 'Produto não encontrado no estoque';
+        document.querySelector(`[data-prod="${nomeProdAntigo}"][data-t="salvar-edit"]`).parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return;
+      }
+      
+      const novoNome = document.querySelector(`[data-prod="${nomeProdAntigo}"][data-f="edit-nome"]`).value.trim();
+      const novoTipo = document.querySelector(`[data-prod="${nomeProdAntigo}"][data-f="edit-tipo"]`).value;
+      const novoEstMin = document.querySelector(`[data-prod="${nomeProdAntigo}"][data-f="edit-estmin"]`).value.trim();
+      
+      if (!novoNome) {
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-2';
+        msg.textContent = 'Nome do produto não pode ser vazio';
+        document.querySelector(`[data-prod="${nomeProdAntigo}"][data-t="salvar-edit"]`).parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return;
+      }
+      
+      if (!novoEstMin || parse(novoEstMin) < 0) {
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-2';
+        msg.textContent = 'Estoque mínimo inválido';
+        document.querySelector(`[data-prod="${nomeProdAntigo}"][data-t="salvar-edit"]`).parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return;
+      }
+      
+      const btn = document.querySelector(`[data-prod="${nomeProdAntigo}"][data-t="salvar-edit"]`);
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+      
+      if (novoNome !== nomeProdAntigo) {
+        const idx = produtosLocal[localAtual].indexOf(nomeProdAntigo);
+        if (idx > -1) {
+          produtosLocal[localAtual][idx] = novoNome;
+          localStorage.setItem('produtosLocal', JSON.stringify(produtosLocal));
+        }
+      }
+      
+      const dadosAtualizados = {
+        ...reg,
+        produto: novoNome,
+        tipo: novoTipo,
+        estoqueMinimo: parse(novoEstMin)
+      };
+      
+      if (window.dataSdk) {
+        const res = await window.dataSdk.update(dadosAtualizados);
+        if (res.isOk) {
+          renderListaProd();
+          renderTabela();
+          updProdSelect();
+        } else {
+          const msg = document.createElement('div');
+          msg.className = 'text-red-600 text-xs mt-2';
+          msg.textContent = 'Erro ao salvar alterações';
+          btn.parentElement.appendChild(msg);
+          setTimeout(() => msg.remove(), 3000);
+          btn.disabled = false;
+          btn.textContent = '💾 Salvar Alterações';
+        }
+      } else {
+        Object.assign(reg, dadosAtualizados);
+        salvarLocal();
+        renderListaProd();
+        renderTabela();
+        updProdSelect();
+      }
+    }
+
+    async function addAnalise(nomeProd) {
+      const reg = registros.find(r => r.local === localAtual && r.produto === nomeProd);
+      if (!reg) {
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-xs mt-2';
+        msg.textContent = 'Produto não encontrado no estoque';
+        document.querySelector(`[data-prod="${nomeProd}"][data-t="add-analise"]`).parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return;
+      }
+      
+      const forn = document.querySelector(`[data-prod="${nomeProd}"][data-f="forn"]`).value.trim();
+      const qual = document.querySelector(`[data-prod="${nomeProd}"][data-f="qual"]`).value.trim();
+      const entr = document.querySelector(`[data-prod="${nomeProd}"][data-f="entr"]`).value.trim();
+      const tipo = document.querySelector(`[data-prod="${nomeProd}"][data-f="tipo"]`).value;
+      const said = document.querySelector(`[data-prod="${nomeProd}"][data-f="said"]`).value.trim();
+      const obs = document.querySelector(`[data-prod="${nomeProd}"][data-f="obs"]`).value.trim();
+      
+      const entradaNum = parse(entr) || 0;
+      const saidaNum = parse(said) || 0;
+      
+      const rendimento = entradaNum > 0 ? ((saidaNum / entradaNum) * 100).toFixed(2) : '0.00';
+      const quebra = (100 - parseFloat(rendimento)).toFixed(2);
+      
+      const btn = document.querySelector(`[data-prod="${nomeProd}"][data-t="add-analise"]`);
+      const editIdx = btn.dataset.editIdx;
+      const analises = parseJson(reg.analisesFornecedores || '[]');
+      
+      const novaAnalise = {
+        fornecedor: forn,
+        qualidade: qual,
+        entrada: entr,
+        tipo: tipo,
+        saida: said,
+        rendimento: rendimento,
+        quebra: quebra,
+        observacao: obs
+      };
+      
+      if (editIdx !== undefined) {
+        analises[parseInt(editIdx)] = novaAnalise;
+        delete btn.dataset.editIdx;
+      } else {
+        analises.push(novaAnalise);
+      }
+      
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+      
+      if (window.dataSdk) {
+        const res = await window.dataSdk.update({ ...reg, analisesFornecedores: JSON.stringify(analises) });
+        if (res.isOk) {
+          document.querySelector(`[data-prod="${nomeProd}"][data-f="forn"]`).value = '';
+          document.querySelector(`[data-prod="${nomeProd}"][data-f="qual"]`).value = '';
+          document.querySelector(`[data-prod="${nomeProd}"][data-f="entr"]`).value = '';
+          document.querySelector(`[data-prod="${nomeProd}"][data-f="said"]`).value = '';
+          document.querySelector(`[data-prod="${nomeProd}"][data-f="obs"]`).value = '';
+          
+          const editMsg = document.getElementById(`edit-msg-${nomeProd.replace(/\s/g, '_')}`);
+          if (editMsg) editMsg.remove();
+          
+          btn.textContent = '+ Adicionar Análise';
+          btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+          btn.classList.add('bg-green-600', 'hover:bg-green-700');
+          
+          renderListaProd();
+        } else {
+          const msg = document.createElement('div');
+          msg.className = 'text-red-600 text-xs mt-2';
+          msg.textContent = 'Erro ao salvar análise';
+          btn.parentElement.appendChild(msg);
+          setTimeout(() => msg.remove(), 3000);
+        }
+      } else {
+        reg.analisesFornecedores = JSON.stringify(analises);
+        salvarLocal();
+        
+        document.querySelector(`[data-prod="${nomeProd}"][data-f="forn"]`).value = '';
+        document.querySelector(`[data-prod="${nomeProd}"][data-f="qual"]`).value = '';
+        document.querySelector(`[data-prod="${nomeProd}"][data-f="entr"]`).value = '';
+        document.querySelector(`[data-prod="${nomeProd}"][data-f="said"]`).value = '';
+        document.querySelector(`[data-prod="${nomeProd}"][data-f="obs"]`).value = '';
+        
+        const editMsg = document.getElementById(`edit-msg-${nomeProd.replace(/\s/g, '_')}`);
+        if (editMsg) editMsg.remove();
+        
+        btn.textContent = '+ Adicionar Análise';
+        btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        btn.classList.add('bg-green-600', 'hover:bg-green-700');
+        
+        renderListaProd();
+      }
+      
+      btn.disabled = false;
+    }
+
+    async function editAnalise(nomeProd, idx) {
+      const reg = registros.find(r => r.local === localAtual && r.produto === nomeProd);
+      if (!reg) return;
+      
+      const analises = parseJson(reg.analisesFornecedores || '[]');
+      const analise = analises[idx];
+      if (!analise) return;
+      
+      document.querySelector(`[data-prod="${nomeProd}"][data-f="forn"]`).value = analise.fornecedor || '';
+      document.querySelector(`[data-prod="${nomeProd}"][data-f="qual"]`).value = analise.qualidade || '';
+      document.querySelector(`[data-prod="${nomeProd}"][data-f="entr"]`).value = analise.entrada || '';
+      document.querySelector(`[data-prod="${nomeProd}"][data-f="tipo"]`).value = analise.tipo || 'Und';
+      document.querySelector(`[data-prod="${nomeProd}"][data-f="said"]`).value = analise.saida || '';
+      document.querySelector(`[data-prod="${nomeProd}"][data-f="obs"]`).value = analise.observacao || '';
+      
+      const btnAdd = document.querySelector(`[data-prod="${nomeProd}"][data-t="add-analise"]`);
+      btnAdd.dataset.editIdx = idx;
+      btnAdd.textContent = '✏️ Atualizar Análise';
+      btnAdd.classList.remove('bg-green-600', 'hover:bg-green-700');
+      btnAdd.classList.add('bg-blue-600', 'hover:bg-blue-700');
+      
+      const msg = document.createElement('div');
+      msg.className = 'text-blue-600 text-xs mt-2 font-semibold';
+      msg.id = `edit-msg-${nomeProd.replace(/\s/g, '_')}`;
+      msg.textContent = '✏️ Modo de edição ativado. Faça as alterações e clique em "Atualizar Análise".';
+      if (!document.getElementById(`edit-msg-${nomeProd.replace(/\s/g, '_')}`)) {
+        btnAdd.parentElement.appendChild(msg);
+      }
+    }
+
+    async function delAnalise(nomeProd, idx) {
+      const reg = registros.find(r => r.local === localAtual && r.produto === nomeProd);
+      if (!reg) return;
+      
+      const analises = parseJson(reg.analisesFornecedores || '[]');
+      analises.splice(idx, 1);
+      
+      if (window.dataSdk) {
+        const res = await window.dataSdk.update({ ...reg, analisesFornecedores: JSON.stringify(analises) });
+        if (res.isOk) {
+          renderListaProd();
+        }
+      } else {
+        reg.analisesFornecedores = JSON.stringify(analises);
+        salvarLocal();
+        renderListaProd();
+      }
+    }
+
+    document.getElementById('btnAdd').onclick = () => {
+      if (!modoEdicao) return;
+      if (!localAtual) { 
+        const msg = document.createElement('div');
+        msg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        msg.textContent = 'Selecione um local primeiro';
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      updProdSelect();
+      document.getElementById('modalAdd').classList.remove('hidden');
+    };
+
+    document.getElementById('btnCancelar').onclick = () => {
+      document.getElementById('modalAdd').classList.add('hidden');
+      limparForm();
+    };
+
+    document.getElementById('btnConfirmar').onclick = async () => {
+      const prod = document.getElementById('prodSelect').value;
+      const tipo = document.getElementById('tipoSelect').value;
+      const estMin = document.getElementById('estMin').value.trim();
+      
+      if (!prod) { 
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-sm mt-2';
+        msg.textContent = 'Selecione produto';
+        document.getElementById('prodSelect').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      if (!estMin) { 
+        const msg = document.createElement('div');
+        msg.className = 'text-red-600 text-sm mt-2';
+        msg.textContent = 'Insira estoque mínimo';
+        document.getElementById('estMin').parentElement.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      
+      const regsLocal = registros.filter(r => r.local === localAtual);
+      const maxOrdem = regsLocal.length > 0 ? Math.max(...regsLocal.map(r => r.ordem)) : 0;
+      
+      if (registros.length >= 999) { 
+        const msg = document.createElement('div');
+        msg.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        msg.textContent = 'Limite de 999 produtos atingido';
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 3000);
+        return; 
+      }
+      
+      const btn = document.getElementById('btnConfirmar');
+      const btnC = document.getElementById('btnCancelar');
+      btn.disabled = true;
+      btnC.disabled = true;
+      btn.textContent = 'Adicionando...';
+      
+      const novo = {
+        local: localAtual,
+        ordem: maxOrdem + 1,
+        produto: prod,
+        tipo: tipo,
+        estoqueMinimo: parse(estMin),
+        entradas: '[]',
+        saidas: '[]',
+        pedidoFeito: 'Não',
+        observacao: '',
+        analisesFornecedores: '[]'
+      };
+      
+      if (window.dataSdk) {
+        const res = await window.dataSdk.create(novo);
+        if (res.isOk) {
+          document.getElementById('modalAdd').classList.add('hidden');
+          limparForm();
+        } else {
+          const msg = document.createElement('div');
+          msg.className = 'text-red-600 text-sm mt-2';
+          msg.textContent = 'Erro ao adicionar produto';
+          btn.parentElement.appendChild(msg);
+          setTimeout(() => msg.remove(), 3000);
+        }
+      } else {
+        novo.__backendId = 'local_' + Date.now() + '_' + Math.random();
+        registros.push(novo);
+        salvarLocal();
+        renderTabela();
+        document.getElementById('modalAdd').classList.add('hidden');
+        limparForm();
+      }
+      
+      btn.disabled = false;
+      btnC.disabled = false;
+      btn.textContent = 'Adicionar';
+    };
+
+    function limparForm() {
+      document.getElementById('prodSelect').value = '';
+      document.getElementById('tipoSelect').value = 'Und';
+      document.getElementById('estMin').value = '';
+    }
+
+    function updProdSelect() {
+      const sel = document.getElementById('prodSelect');
+      const prods = produtosLocal[localAtual] || [];
+      sel.innerHTML = '<option value="">-- Selecione --</option>';
+      prods.forEach(p => sel.innerHTML += `<option value="${p}">${p}</option>`);
+    }
+
+    document.getElementById('localSelect').onchange = (e) => {
+      localAtual = e.target.value;
+      const btnA = document.getElementById('btnAdd');
+      const btnC = document.getElementById('btnConfig');
+      if (localAtual) {
+        btnA.disabled = !modoEdicao;
+        btnC.disabled = !modoEdicao;
+        renderTabela();
+      } else {
+        btnA.disabled = true;
+        btnC.disabled = true;
+        document.getElementById('tabelaDiv').innerHTML = '<p class="text-center py-12 text-gray-500">Selecione um local para começar</p>';
+      }
+    };
+
+    document.getElementById('btnRelatorios').onclick = () => {
+      gerarRelatorioGeral();
+      document.getElementById('relatorioGeral').classList.remove('hidden');
+      document.getElementById('relatorioPedidos').classList.add('hidden');
+      document.getElementById('relatorioMovimentacoes').classList.add('hidden');
+      document.getElementById('relatorioAnalise').classList.add('hidden');
+      document.getElementById('tabGeral').className = 'px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold';
+      document.getElementById('tabPedidos').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabMovimentacoes').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabAnalise').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('modalRelatorios').classList.remove('hidden');
+    };
+
+    document.getElementById('btnFecharRel').onclick = () => {
+      document.getElementById('modalRelatorios').classList.add('hidden');
+    };
+
+    document.getElementById('tabGeral').onclick = () => {
+      gerarRelatorioGeral();
+      document.getElementById('relatorioGeral').classList.remove('hidden');
+      document.getElementById('relatorioPedidos').classList.add('hidden');
+      document.getElementById('relatorioMovimentacoes').classList.add('hidden');
+      document.getElementById('relatorioAnalise').classList.add('hidden');
+      document.getElementById('tabGeral').className = 'px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold';
+      document.getElementById('tabPedidos').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabMovimentacoes').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabAnalise').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+    };
+
+    document.getElementById('tabPedidos').onclick = () => {
+      gerarRelatorioPedidos();
+      document.getElementById('relatorioGeral').classList.add('hidden');
+      document.getElementById('relatorioPedidos').classList.remove('hidden');
+      document.getElementById('relatorioMovimentacoes').classList.add('hidden');
+      document.getElementById('relatorioAnalise').classList.add('hidden');
+      document.getElementById('tabGeral').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabPedidos').className = 'px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold';
+      document.getElementById('tabMovimentacoes').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabAnalise').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+    };
+
+    document.getElementById('tabMovimentacoes').onclick = () => {
+      gerarRelatorioMovimentacoes();
+      document.getElementById('relatorioGeral').classList.add('hidden');
+      document.getElementById('relatorioPedidos').classList.add('hidden');
+      document.getElementById('relatorioMovimentacoes').classList.remove('hidden');
+      document.getElementById('relatorioAnalise').classList.add('hidden');
+      document.getElementById('tabGeral').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabPedidos').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabMovimentacoes').className = 'px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold';
+      document.getElementById('tabAnalise').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+    };
+
+    document.getElementById('tabAnalise').onclick = () => {
+      gerarRelatorioAnalise();
+      document.getElementById('relatorioGeral').classList.add('hidden');
+      document.getElementById('relatorioPedidos').classList.add('hidden');
+      document.getElementById('relatorioMovimentacoes').classList.add('hidden');
+      document.getElementById('relatorioAnalise').classList.remove('hidden');
+      document.getElementById('tabGeral').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabPedidos').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabMovimentacoes').className = 'px-4 py-2 rounded-lg bg-gray-200 text-gray-700 font-semibold hover:bg-gray-300';
+      document.getElementById('tabAnalise').className = 'px-4 py-2 rounded-lg bg-purple-600 text-white font-semibold';
+    };
+
+    document.getElementById('btnImprimirRel').onclick = () => {
+      window.print();
+    };
+
+    function gerarRelatorioGeral() {
+      const nomes = { 
+        almox_agroindustria:'Almoxarifado Agroindústria', 
+        almox_hortaria:'Almoxarifado Horta', 
+        almox_mnt:'Almoxarifado Manutenção', 
+        cam_fria_mp:'Câmara Fria Matéria-prima', 
+        cam_fria_prod_finais:'Câmara Fria Produtos Acabados' 
+      };
+      
+      const locais = ['almox_agroindustria', 'almox_hortaria', 'almox_mnt', 'cam_fria_mp', 'cam_fria_prod_finais'];
+      let html = '';
+      
+      locais.forEach(local => {
+        const regsLocal = registros.filter(r => r.local === local).sort((a,b) => a.ordem - b.ordem);
+        
+        if (regsLocal.length === 0) return;
+        
+        html += `<div class="mb-6 bg-gray-50 p-4 rounded-lg border-2 border-purple-200">`;
+        html += `<h3 class="text-xl font-bold text-purple-700 mb-3">${nomes[local]}</h3>`;
+        html += `<table class="w-full border-collapse bg-white text-sm"><thead><tr class="bg-purple-600 text-white">`;
+        html += `<th class="border p-2">Produto</th><th class="border p-2">Tipo</th><th class="border p-2">Est. Mín</th>`;
+        html += `<th class="border p-2">Saldo Atual</th><th class="border p-2">Valor Estoque</th><th class="border p-2">Status</th></tr></thead><tbody>`;
+        
+        let totalProdutos = 0;
+        let totalAlertas = 0;
+        let valorTotalLocal = 0;
+        
+        regsLocal.forEach(r => {
+          const saldo = calcSaldo(r.entradas, r.saidas);
+          const valorInfo = calcValorEstoque(r.entradas, r.saidas);
+          const alerta = saldo <= parse(r.estoqueMinimo);
+          const valorMedio = saldo > 0 ? valorInfo.valor / saldo : 0;
+          totalProdutos++;
+          if (alerta) totalAlertas++;
+          valorTotalLocal += valorInfo.valor;
+          
+          html += `<tr class="${alerta?'bg-red-50':''}">`;
+          html += `<td class="border p-2">${r.produto}</td>`;
+          html += `<td class="border p-2 text-center">${r.tipo}</td>`;
+          html += `<td class="border p-2 text-right">${fmt(r.estoqueMinimo)}</td>`;
+          html += `<td class="border p-2 text-right font-bold">${fmt(saldo)}</td>`;
+          html += `<td class="border p-2 text-right"><div class="font-bold text-blue-700">${fmtDinheiro(valorInfo.valor)}</div><div class="text-xs text-orange-600">(Méd: ${fmtDinheiro(valorMedio)}/un)</div></td>`;
+          html += `<td class="border p-2 text-center ${alerta?'text-red-600 font-semibold':'text-green-600'}">${alerta?'⚠️ Precisa Pedir':'✓ Ok'}</td>`;
+          html += `</tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        html += `<div class="mt-3 flex gap-6 text-sm font-semibold flex-wrap">`;
+        html += `<span>Total de Produtos: <span class="text-purple-700">${totalProdutos}</span></span>`;
+        html += `<span>Alertas: <span class="text-red-600">${totalAlertas}</span></span>`;
+        html += `<span>Em dia: <span class="text-green-600">${totalProdutos - totalAlertas}</span></span>`;
+        html += `<span>Valor Total: <span class="text-blue-700">${fmtDinheiro(valorTotalLocal)}</span></span>`;
+        html += `</div></div>`;
+      });
+      
+      if (html === '') {
+        html = '<p class="text-center text-gray-500 py-12">Nenhum produto cadastrado ainda</p>';
+      }
+      
+      document.getElementById('relatorioGeral').innerHTML = html;
+    }
+
+    function gerarRelatorioPedidos() {
+      const nomes = { 
+        almox_agroindustria:'Almoxarifado Agroindústria', 
+        almox_hortaria:'Almoxarifado Horta', 
+        almox_mnt:'Almoxarifado Manutenção', 
+        cam_fria_mp:'Câmara Fria Matéria-prima', 
+        cam_fria_prod_finais:'Câmara Fria Produtos Acabados' 
+      };
+      
+      const locais = ['almox_agroindustria', 'almox_hortaria', 'almox_mnt', 'cam_fria_mp', 'cam_fria_prod_finais'];
+      let html = '';
+      let totalGeral = 0;
+      let valorTotalPedir = 0;
+      
+      locais.forEach(local => {
+        const regsLocal = registros.filter(r => {
+          const saldo = calcSaldo(r.entradas, r.saidas);
+          return r.local === local && saldo <= parse(r.estoqueMinimo);
+        }).sort((a,b) => a.ordem - b.ordem);
+        
+        if (regsLocal.length === 0) return;
+        
+        html += `<div class="mb-6 bg-red-50 p-4 rounded-lg border-2 border-red-300">`;
+        html += `<h3 class="text-xl font-bold text-red-700 mb-3">${nomes[local]}</h3>`;
+        html += `<table class="w-full border-collapse bg-white text-sm"><thead><tr class="bg-red-600 text-white">`;
+        html += `<th class="border p-2">Produto</th><th class="border p-2">Tipo</th><th class="border p-2">Est. Mín</th>`;
+        html += `<th class="border p-2">Saldo Atual</th><th class="border p-2">Valor Estoque</th><th class="border p-2">Pedido Feito?</th><th class="border p-2">Observação</th></tr></thead><tbody>`;
+        
+        let valorLocal = 0;
+        
+        regsLocal.forEach(r => {
+          const saldo = calcSaldo(r.entradas, r.saidas);
+          const valorInfo = calcValorEstoque(r.entradas, r.saidas);
+          const valorMedio = saldo > 0 ? valorInfo.valor / saldo : 0;
+          totalGeral++;
+          valorLocal += valorInfo.valor;
+          valorTotalPedir += valorInfo.valor;
+          
+          html += `<tr class="bg-red-50">`;
+          html += `<td class="border p-2 font-semibold">${r.produto}</td>`;
+          html += `<td class="border p-2 text-center">${r.tipo}</td>`;
+          html += `<td class="border p-2 text-right">${fmt(r.estoqueMinimo)}</td>`;
+          html += `<td class="border p-2 text-right font-bold text-red-600">${fmt(saldo)}</td>`;
+          html += `<td class="border p-2 text-right"><div class="font-bold text-blue-700">${fmtDinheiro(valorInfo.valor)}</div><div class="text-xs text-orange-600">(Méd: ${fmtDinheiro(valorMedio)}/un)</div></td>`;
+          html += `<td class="border p-2 text-center"><span class="${r.pedidoFeito==='Sim'?'bg-green-200 text-green-800':'bg-yellow-200 text-yellow-800'} px-2 py-1 rounded text-xs font-semibold">${r.pedidoFeito||'Não'}</span></td>`;
+          html += `<td class="border p-2 text-xs">${r.observacao||'-'}</td>`;
+          html += `</tr>`;
+        });
+        
+        html += `</tbody></table>`;
+        html += `<div class="mt-3 flex gap-6 text-sm font-semibold">`;
+        html += `Produtos a pedir neste local: <span class="text-red-700">${regsLocal.length}</span>`;
+        html += ` | Valor: <span class="text-blue-700">${fmtDinheiro(valorLocal)}</span>`;
+        html += `</div></div>`;
+      });
+      
+      if (html === '') {
+        html = '<div class="text-center py-12 bg-green-50 rounded-lg border-2 border-green-300">';
+        html += '<p class="text-2xl mb-2">  </p>';
+        html += '<p class="text-xl font-semibold text-green-700">Nenhum produto precisa ser pedido!</p>';
+        html += '<p class="text-gray-600 mt-2">Todos os estoques estão em dia.</p></div>';
+      } else {
+        html = `<div class="mb-4 p-4 bg-orange-100 border-2 border-orange-400 rounded-lg">
+          <p class="font-bold text-lg text-orange-800">⚠️ Total de produtos para pedir: ${totalGeral}</p>
+          <p class="font-bold text-lg text-blue-700 mt-1">💰 Valor total em estoque dos produtos a pedir: ${fmtDinheiro(valorTotalPedir)}</p>
+        </div>` + html;
+      }
+      
+      document.getElementById('relatorioPedidos').innerHTML = html;
+    }
+
+    function gerarRelatorioMovimentacoes() {
+      const nomes = { 
+        almox_agroindustria:'Almoxarifado Agroindústria', 
+        almox_hortaria:'Almoxarifado Horta', 
+        almox_mnt:'Almoxarifado Manutenção', 
+        cam_fria_mp:'Câmara Fria Matéria-prima', 
+        cam_fria_prod_finais:'Câmara Fria Produtos Acabados' 
+      };
+      
+      const dataAtual = new Date();
+      const mesAtual = dataAtual.getMonth() + 1;
+      const anoAtual = dataAtual.getFullYear();
+      
+      let html = '<div class="mb-4 bg-blue-50 p-4 rounded-lg border-2 border-blue-300">';
+      html += '<h3 class="text-lg font-bold text-blue-800 mb-3">Filtros de Movimentação</h3>';
+      html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-3">';
+      html += '<div><label class="block text-sm font-semibold mb-1">Almoxarifado:</label>';
+      html += '<select id="filtroLocal" class="w-full p-2 border-2 border-blue-300 rounded-lg">';
+      html += '<option value="">-- Selecione --</option>';
+      Object.keys(nomes).forEach(local => {
+        html += `<option value="${local}">${nomes[local]}</option>`;
+      });
+      html += '</select></div>';
+      html += '<div><label class="block text-sm font-semibold mb-1">Mês:</label>';
+      html += '<select id="filtroMes" class="w-full p-2 border-2 border-blue-300 rounded-lg">';
+      for (let m = 1; m <= 12; m++) {
+        const selected = m === mesAtual ? 'selected' : '';
+        const nomeMes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][m-1];
+        html += `<option value="${m}" ${selected}>${nomeMes}</option>`;
+      }
+      html += '</select></div>';
+      html += '<div><label class="block text-sm font-semibold mb-1">Ano:</label>';
+      html += '<select id="filtroAno" class="w-full p-2 border-2 border-blue-300 rounded-lg">';
+      for (let a = anoAtual; a >= anoAtual - 5; a--) {
+        html += `<option value="${a}">${a}</option>`;
+      }
+      html += '</select></div>';
+      html += '</div>';
+      html += '<div class="mt-3"><button id="btnFiltrarMov" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold">Filtrar Movimentações</button></div>';
+      html += '</div>';
+      html += '<div id="resultadoMovimentacoes" class="mt-4"></div>';
+      
+      document.getElementById('relatorioMovimentacoes').innerHTML = html;
+      
+      document.getElementById('btnFiltrarMov').onclick = () => {
+        const local = document.getElementById('filtroLocal').value;
+        const mes = parseInt(document.getElementById('filtroMes').value);
+        const ano = parseInt(document.getElementById('filtroAno').value);
+        
+        if (!local) {
+          const msg = document.createElement('div');
+          msg.className = 'mt-3 p-3 bg-red-100 border border-red-300 rounded text-red-700 text-sm';
+          msg.textContent = 'Por favor, selecione um almoxarifado';
+          document.getElementById('resultadoMovimentacoes').innerHTML = '';
+          document.getElementById('resultadoMovimentacoes').appendChild(msg);
+          return;
+        }
+        
+        exibirMovimentacoes(local, mes, ano);
+      };
+    }
+
+    function exibirMovimentacoes(local, mes, ano) {
+      const nomes = { 
+        almox_agroindustria:'Almoxarifado Agroindústria', 
+        almox_hortaria:'Almoxarifado Horta', 
+        almox_mnt:'Almoxarifado Manutenção', 
+        cam_fria_mp:'Câmara Fria Matéria-prima', 
+        cam_fria_prod_finais:'Câmara Fria Produtos Acabados' 
+      };
+      
+      const nomeMes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][mes-1];
+      
+      const regsLocal = registros.filter(r => r.local === local).sort((a,b) => a.ordem - b.ordem);
+      
+      if (regsLocal.length === 0) {
+        document.getElementById('resultadoMovimentacoes').innerHTML = '<p class="text-center text-gray-500 py-8">Nenhum produto cadastrado neste almoxarifado</p>';
+        return;
+      }
+      
+      let html = `<div class="bg-white p-4 rounded-lg border-2 border-blue-200">`;
+      html += `<h3 class="text-xl font-bold text-blue-700 mb-3">${nomes[local]} - ${nomeMes}/${ano}</h3>`;
+      
+      let totalEntradas = 0;
+      let totalSaidas = 0;
+      let valorTotalEntradas = 0;
+      let valorTotalSaidas = 0;
+      
+      regsLocal.forEach(r => {
+        const entradas = parseJson(r.entradas).filter(e => {
+          const data = e.data;
+          if (!data || data.length < 8) return false;
+          const partes = data.split('/');
+          const mesEnt = parseInt(partes[1]);
+          const anoEnt = parseInt('20' + partes[2]);
+          return mesEnt === mes && anoEnt === ano;
+        });
+        
+        const saidas = parseJson(r.saidas).filter(s => {
+          const data = s.data;
+          if (!data || data.length < 8) return false;
+          const partes = data.split('/');
+          const mesSai = parseInt(partes[1]);
+          const anoSai = parseInt('20' + partes[2]);
+          return mesSai === mes && anoSai === ano;
+        });
+        
+        if (entradas.length === 0 && saidas.length === 0) return;
+        
+        html += `<div class="mb-6 border-b pb-4">`;
+        html += `<h4 class="font-bold text-lg mb-3 text-gray-800">${r.produto} (${r.tipo})</h4>`;
+        
+        if (entradas.length > 0) {
+          html += `<div class="mb-3"><p class="font-semibold text-green-700 mb-2">📥 Entradas:</p>`;
+          html += `<table class="w-full border-collapse bg-green-50 text-sm"><thead><tr class="bg-green-600 text-white">`;
+          html += `<th class="border p-2">Data</th><th class="border p-2">Quantidade</th><th class="border p-2">Valor Total</th><th class="border p-2">Valor Unitário</th></tr></thead><tbody>`;
+          
+          entradas.forEach(e => {
+            const qtd = parse(e.quantidade);
+            const preco = parseDinheiro(e.preco);
+            const precoUnit = preco / qtd;
+            totalEntradas += qtd;
+            valorTotalEntradas += preco;
+            
+            html += `<tr>`;
+            html += `<td class="border p-2 text-center">${e.data}</td>`;
+            html += `<td class="border p-2 text-right">${fmt(qtd)}</td>`;
+            html += `<td class="border p-2 text-right font-bold text-green-700">${fmtDinheiro(preco)}</td>`;
+            html += `<td class="border p-2 text-right text-orange-600">${fmtDinheiro(precoUnit)}</td>`;
+            html += `</tr>`;
+          });
+          
+          html += `</tbody></table></div>`;
+        }
+        
+        if (saidas.length > 0) {
+          html += `<div class="mb-3"><p class="font-semibold text-red-700 mb-2">📤 Saídas:</p>`;
+          html += `<table class="w-full border-collapse bg-red-50 text-sm"><thead><tr class="bg-red-600 text-white">`;
+          html += `<th class="border p-2">Data</th><th class="border p-2">Quantidade</th><th class="border p-2">Custo Total (PEPS)</th></tr></thead><tbody>`;
+          
+          saidas.forEach(s => {
+            const qtd = parse(s.quantidade);
+            const custoTotal = parseDinheiro(s.custoTotal || '0');
+            totalSaidas += qtd;
+            valorTotalSaidas += custoTotal;
+            
+            html += `<tr>`;
+            html += `<td class="border p-2 text-center">${s.data}</td>`;
+            html += `<td class="border p-2 text-right">${fmt(qtd)}</td>`;
+            html += `<td class="border p-2 text-right font-bold text-red-700">${fmtDinheiro(custoTotal)}</td>`;
+            html += `</tr>`;
+          });
+          
+          html += `</tbody></table></div>`;
+        }
+        
+        html += `</div>`;
+      });
+      
+      html += `<div class="mt-4 p-4 bg-blue-100 rounded-lg border-2 border-blue-400">`;
+      html += `<h4 class="font-bold text-lg text-blue-800 mb-2">Resumo do Período</h4>`;
+      html += `<div class="grid grid-cols-2 gap-4 text-sm">`;
+      html += `<div><span class="font-semibold">Total Entradas:</span> <span class="text-green-700 font-bold">${fmt(totalEntradas)} unidades</span></div>`;
+      html += `<div><span class="font-semibold">Valor Entradas:</span> <span class="text-green-700 font-bold">${fmtDinheiro(valorTotalEntradas)}</span></div>`;
+      html += `<div><span class="font-semibold">Total Saídas:</span> <span class="text-red-700 font-bold">${fmt(totalSaidas)} unidades</span></div>`;
+      html += `<div><span class="font-semibold">Custo Saídas (PEPS):</span> <span class="text-red-700 font-bold">${fmtDinheiro(valorTotalSaidas)}</span></div>`;
+      html += `</div></div>`;
+      
+      html += `</div>`;
+      
+      if (totalEntradas === 0 && totalSaidas === 0) {
+        html = '<p class="text-center text-gray-500 py-8">Nenhuma movimentação encontrada neste período</p>';
+      }
+      
+      document.getElementById('resultadoMovimentacoes').innerHTML = html;
+    }
+
+    function gerarRelatorioAnalise() {
+      let html = '<div class="mb-4 bg-orange-50 p-4 rounded-lg border-2 border-orange-300">';
+      html += '<h3 class="text-lg font-bold text-orange-800 mb-3">Filtro de Análise de Produtos</h3>';
+      html += '<div><label class="block text-sm font-semibold mb-1">Selecione o Produto:</label>';
+      html += '<select id="filtroProdutoAnalise" class="w-full p-2 border-2 border-orange-300 rounded-lg">';
+      html += '<option value="">-- Selecione um produto --</option>';
+      
+      const todosProdutosSet = new Set();
+      
+      Object.keys(produtosLocal).forEach(local => {
+        produtosLocal[local].forEach(prod => {
+          todosProdutosSet.add(prod);
+        });
+      });
+      
+      Array.from(todosProdutosSet).sort().forEach(prod => {
+        html += `<option value="${prod}">${prod}</option>`;
+      });
+      
+      html += '</select></div>';
+      html += '<div class="mt-3"><button id="btnFiltrarAnalise" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-semibold">Exibir Análises</button></div>';
+      html += '</div>';
+      html += '<div id="resultadoAnalise" class="mt-4"></div>';
+      
+      document.getElementById('relatorioAnalise').innerHTML = html;
+      
+      document.getElementById('btnFiltrarAnalise').onclick = () => {
+        const produto = document.getElementById('filtroProdutoAnalise').value;
+        
+        if (!produto) {
+          const msg = document.createElement('div');
+          msg.className = 'mt-3 p-3 bg-red-100 border border-red-300 rounded text-red-700 text-sm';
+          msg.textContent = 'Por favor, selecione um produto';
+          document.getElementById('resultadoAnalise').innerHTML = '';
+          document.getElementById('resultadoAnalise').appendChild(msg);
+          return;
+        }
+        
+        exibirAnalisesProduto(produto);
+      };
+    }
+
+    function exibirAnalisesProduto(nomeProd) {
+      const reg = registros.find(r => r.produto === nomeProd);
+      
+      if (!reg) {
+        document.getElementById('resultadoAnalise').innerHTML = '<p class="text-center text-gray-500 py-8">Produto não encontrado no estoque</p>';
+        return;
+      }
+      
+      const analises = parseJson(reg.analisesFornecedores || '[]');
+      
+      if (analises.length === 0) {
+        let html = '<div class="text-center py-12 bg-yellow-50 rounded-lg border-2 border-yellow-300">';
+        html += '<p class="text-2xl mb-2">📋</p>';
+        html += `<p class="text-xl font-semibold text-yellow-800">Nenhuma análise cadastrada para "${nomeProd}"</p>`;
+        html += '<p class="text-gray-600 mt-2">Adicione análises na Ficha dos Produtos para visualizá-las aqui.</p></div>';
+        document.getElementById('resultadoAnalise').innerHTML = html;
+        return;
+      }
+      
+      const nomes = { 
+        almox_agroindustria:'Almoxarifado Agroindústria', 
+        almox_hortaria:'Almoxarifado Hortaria', 
+        almox_mnt:'Almoxarifado Manutenção', 
+        cam_fria_mp:'Câmara Fria Matéria-prima', 
+        cam_fria_prod_finais:'Câmara Fria Produtos Acabados' 
+      };
+      
+      let html = `<div class="bg-white p-4 rounded-lg border-2 border-orange-200">`;
+      html += `<h3 class="text-xl font-bold text-orange-700 mb-1">${nomeProd}</h3>`;
+      html += `<p class="text-sm text-gray-600 mb-4">Local: ${nomes[reg.local] || reg.local} | Tipo: ${reg.tipo}</p>`;
+      
+      html += `<table class="w-full border-collapse bg-white text-sm"><thead><tr class="bg-orange-600 text-white">`;
+      html += `<th class="border p-2">Fornecedor</th><th class="border p-2">Qualidade</th><th class="border p-2">Amostragem<br>Entrada</th>`;
+      html += `<th class="border p-2">Tipo</th><th class="border p-2">Produto<br>Acabado</th>`;
+      html += `<th class="border p-2">Rendimento</th><th class="border p-2">Quebra</th><th class="border p-2">Observação</th></tr></thead><tbody>`;
+      
+      analises.forEach(a => {
+        html += `<tr>`;
+        html += `<td class="border p-2 font-semibold">${a.fornecedor || '-'}</td>`;
+        html += `<td class="border p-2">${a.qualidade || '-'}</td>`;
+        html += `<td class="border p-2 text-right">${a.entrada || '0'}</td>`;
+        html += `<td class="border p-2 text-center">${a.tipo || '-'}</td>`;
+        html += `<td class="border p-2 text-right">${a.saida || '0'}</td>`;
+        html += `<td class="border p-2 text-center"><span class="bg-green-100 text-green-800 px-2 py-1 rounded font-bold">${a.rendimento || '0'}%</span></td>`;
+        html += `<td class="border p-2 text-center"><span class="bg-red-100 text-red-800 px-2 py-1 rounded font-bold">${a.quebra || '0'}%</span></td>`;
+        html += `<td class="border p-2 text-xs">${a.observacao || '-'}</td>`;
+        html += `</tr>`;
+      });
+      
+      html += `</tbody></table>`;
+      
+      const rendimentoMedio = analises.reduce((s, a) => s + parseFloat(a.rendimento || 0), 0) / analises.length;
+      const quebraMedio = analises.reduce((s, a) => s + parseFloat(a.quebra || 0), 0) / analises.length;
+      
+      html += `<div class="mt-4 p-4 bg-orange-100 rounded-lg border-2 border-orange-400">`;
+      html += `<h4 class="font-bold text-lg text-orange-800 mb-2">Resumo das Análises</h4>`;
+      html += `<div class="grid grid-cols-3 gap-4 text-sm">`;
+      html += `<div><span class="font-semibold">Total de Análises:</span> <span class="text-orange-700 font-bold">${analises.length}</span></div>`;
+      html += `<div><span class="font-semibold">Rendimento Médio:</span> <span class="text-green-700 font-bold">${rendimentoMedio.toFixed(2)}%</span></div>`;
+      html += `<div><span class="font-semibold">Quebra Média:</span> <span class="text-red-700 font-bold">${quebraMedio.toFixed(2)}%</span></div>`;
+      html += `</div></div>`;
+      
+      html += `</div>`;
+      
+      document.getElementById('resultadoAnalise').innerHTML = html;
+    }
+
+    async function onConfigChange(config) {
+      document.getElementById('titulo').textContent = config.app_title || defaultConfig.app_title;
+      renderTabela();
+    }
+
+    const elementApi = {
+      defaultConfig,
+      onConfigChange,
+      mapToCapabilities: (c) => ({ recolorables:[], borderables:[], fontEditable:undefined, fontSizeable:undefined }),
+      mapToEditPanelValues: (c) => new Map([['app_title',c.app_title||defaultConfig.app_title],['alert_message',c.alert_message||defaultConfig.alert_message]])
+    };
+
+    async function init() {
+      const stored = localStorage.getItem('produtosLocal');
+      if (stored) {
+        produtosLocal = JSON.parse(stored);
+      } else {
+        produtosLocal = { almox_agroindustria:[], almox_hortaria:[], almox_mnt:[], cam_fria_mp:[], cam_fria_prod_finais:[] };
+      }
+      
+      let sdkTimeout = false;
+      setTimeout(() => { sdkTimeout = true; }, 2000);
+      
+      while (!window.elementSdk && !sdkTimeout) {
+        await new Promise(r => setTimeout(r, 50));
+      }
+      
+      if (window.elementSdk) {
+        await window.elementSdk.init(elementApi);
+      }
+      
+      if (window.dataSdk) {
+        const res = await window.dataSdk.init(dataHandler);
+        if (!res.isOk) console.error('Erro init Data SDK');
+      } else {
+        const localData = localStorage.getItem('estoque_registros');
+        if (localData) {
+          registros = JSON.parse(localData);
+          if (localAtual) renderTabela();
+        }
+      }
+    }
+
+    init();
+  </script>
+  <script src="./supabaseService.js"></script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9af7466920a25e0f',t:'MTc2NTk4MzQ2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>
+</script></body>
 </html>
