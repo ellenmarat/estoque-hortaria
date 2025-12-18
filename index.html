@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { box-sizing: border-box; font-family: Arial, sans-serif; }
-    .alert-row { background-color: #fee; }
   </style>
 </head>
 <body class="h-full overflow-auto">
@@ -30,7 +29,8 @@
 
       <div id="erroSenha" class="hidden text-red-600 text-sm font-semibold text-center mb-3"></div>
 
-      <button id="btnEntrar"
+      <!-- IMPORTANT: type=button -->
+      <button id="btnEntrar" type="button"
               class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold text-lg">
         Entrar
       </button>
@@ -62,8 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const modalLogin = document.getElementById('modalLogin');
   const mainContent = document.getElementById('mainContent');
 
-  btnEntrar.onclick = () => {
+  btnEntrar.addEventListener('click', () => {
     const senha = senhaInput.value;
+
     if (senha === SENHA_EDICAO || senha === SENHA_VISUALIZACAO) {
       modalLogin.classList.add('hidden');
       mainContent.classList.remove('hidden');
@@ -71,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
       erroSenha.textContent = 'Senha inválida';
       erroSenha.classList.remove('hidden');
     }
-  };
+  });
 
 });
 </script>
