@@ -85,7 +85,7 @@
   <script>
     const supabaseUrl = 'https://SEU-PROJETO.supabase.co';
     const supabaseKey = 'SUA_CHAVE_PUBLICA_ANON';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
     const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precisa fazer Pedido" };
     let registros = [];
     let localAtual = '';
