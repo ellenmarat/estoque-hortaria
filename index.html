@@ -53,6 +53,8 @@
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+
   const SENHA_EDICAO = 'Fmo032099*';
   const SENHA_VISUALIZACAO = 'visualizar2025';
 
@@ -64,6 +66,7 @@
 
   btnEntrar.onclick = () => {
     const senha = senhaInput.value;
+
     if (senha === SENHA_EDICAO || senha === SENHA_VISUALIZACAO) {
       modalLogin.classList.add('hidden');
       mainContent.classList.remove('hidden');
@@ -72,7 +75,10 @@
       erroSenha.classList.remove('hidden');
     }
   };
+
+});
 </script>
+
 
 </body>
 </html>
