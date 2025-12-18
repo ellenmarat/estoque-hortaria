@@ -86,49 +86,7 @@
     const supabaseUrl = 'https://SEU-PROJETO.supabase.co';
     const supabaseKey = 'SUA_CHAVE_PUBLICA_ANON';
     const sb = window.supabase.createClient(supabaseUrl, supabaseKey);
-    
-// ==============================
-// Supabase (Opção 2 - sem localStorage)
-// Tabela necessária (crie 1x no SQL Editor do Supabase):
-// create table if not exists app_state (
-//   key text primary key,
-//   value jsonb not null,
-//   updated_at timestamp with time zone default now()
-// );
-// ==============================
-
-async function saveState(key, value) {
-  const { error } = await sb
-    .from('app_state')
-    .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-
-  if (error) {
-    console.error('Erro ao salvar no Supabase (app_state):', error);
-    if (String(error.message || '').toLowerCase().includes('app_state')) {
-      alert('O banco ainda não tem a tabela "app_state". Crie a tabela no Supabase (SQL Editor) e recarregue a página.');
-    }
-  }
-}
-
-async function loadState() {
-  const { data, error } = await sb
-    .from('app_state')
-    .select('key, value')
-    .in('key', ['produtosLocal', 'estoque_registros']);
-
-  if (error) {
-    console.error('Erro ao carregar do Supabase (app_state):', error);
-    if (String(error.message || '').toLowerCase().includes('app_state')) {
-      alert('O banco ainda não tem a tabela "app_state". Crie a tabela no Supabase (SQL Editor) e recarregue a página.');
-    }
-    return {};
-  }
-
-  const out = {};
-  (data || []).forEach(r => { out[r.key] = r.value; });
-  return out;
-}
-const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precisa fazer Pedido" };
+    const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precisa fazer Pedido" };
     let registros = [];
     let localAtual = '';
     let produtosLocal = {};
@@ -206,7 +164,7 @@ const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precis
     const dataHandler = {
       onDataChanged(data) {
         registros = data;
-        saveState('estoque_registros', data);
+        localStorage.setItem('estoque_registros', JSON.stringify(data));
         if (localAtual) renderTabela();
         if (document.getElementById('modalConfig').classList.contains('hidden') === false) {
           renderListaProd();
@@ -215,7 +173,7 @@ const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precis
     };
     
     function salvarLocal() {
-      saveState('estoque_registros', registros);
+      localStorage.setItem('estoque_registros', JSON.stringify(registros));
     }
 
     function verificarSenha() {
@@ -622,7 +580,7 @@ const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precis
         return; 
       }
       produtosLocal[localAtual].push(nome);
-      saveState('produtosLocal', produtosLocal);
+      localStorage.setItem('produtosLocal', JSON.stringify(produtosLocal));
       renderListaProd();
       document.getElementById('novoProdNome').value = '';
       updProdSelect();
@@ -755,7 +713,7 @@ const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precis
       div.querySelectorAll('[data-t="rem"]').forEach(b => {
         b.onclick = () => {
           produtosLocal[localAtual].splice(parseInt(b.dataset.i), 1);
-          saveState('produtosLocal', produtosLocal);
+          localStorage.setItem('produtosLocal', JSON.stringify(produtosLocal));
           renderListaProd();
           updProdSelect();
         };
@@ -843,7 +801,7 @@ const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precis
         const idx = produtosLocal[localAtual].indexOf(nomeProdAntigo);
         if (idx > -1) {
           produtosLocal[localAtual][idx] = novoNome;
-          saveState('produtosLocal', produtosLocal);
+          localStorage.setItem('produtosLocal', JSON.stringify(produtosLocal));
         }
       }
       
@@ -1650,14 +1608,14 @@ const defaultConfig = { app_title: "Controle de Estoque", alert_message: "Precis
     };
 
     async function init() {
-      const state = await loadState();
-      produtosLocal = state.produtosLocal || {};
-      registros = state.estoque_registros || [];
-      // (os locais de estoque continuam vindo da tabela locais_estoque)
-      if (!state.produtosLocal) {
+      const stored = localStorage.getItem('produtosLocal');
+      if (stored) {
+        produtosLocal = JSON.parse(stored);
+      } else {
         produtosLocal = { almox_agroindustria:[], almox_hortaria:[], almox_mnt:[], cam_fria_mp:[], cam_fria_prod_finais:[] };
       }
-let sdkTimeout = false;
+      
+      let sdkTimeout = false;
       setTimeout(() => { sdkTimeout = true; }, 2000);
       
       while (!window.elementSdk && !sdkTimeout) {
@@ -1672,9 +1630,13 @@ let sdkTimeout = false;
         const res = await window.dataSdk.init(dataHandler);
         if (!res.isOk) console.error('Erro init Data SDK');
       } else {
-        // registros já carregados do Supabase via loadState()
-        if (localAtual) renderTabela();
-}
+        const localData = localStorage.getItem('estoque_registros');
+        if (localData) {
+          registros = JSON.parse(localData);
+          if (localAtual) renderTabela();
+        }
+      }
+    }
 
     init();
   </script>
